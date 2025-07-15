@@ -116,6 +116,9 @@ backend:
       - working: true
         agent: "main"
         comment: "FastAPI server with CORS, MongoDB connection, and basic API structure is working"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Root endpoint accessible and returns correct message. API server running properly on configured URL."
 
   - task: "MongoDB connection and models"
     implemented: true
@@ -128,6 +131,9 @@ backend:
       - working: true
         agent: "main"
         comment: "MongoDB connection established, Pydantic models defined for UserProfile, JobListing, JobMatch, ApplicationRecord, ScrapingTask"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: MongoDB connection working. User CRUD operations successful. Data persistence verified through create/retrieve operations."
 
   - task: "SentenceTransformer embeddings and Chroma vector DB"
     implemented: true
@@ -140,6 +146,9 @@ backend:
       - working: true
         agent: "main"
         comment: "SentenceTransformer model loaded, Chroma vector database initialized for resumes and jobs"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Chroma vector DB working. Vector similarity search functional. Fixed metadata serialization issue for lists. Embeddings generated and stored successfully."
 
   - task: "Resume parsing and skill extraction"
     implemented: true
@@ -152,6 +161,9 @@ backend:
       - working: true
         agent: "main"
         comment: "PDF and TXT resume parsing implemented, skill extraction using pattern matching, experience calculation"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Resume upload working for TXT files. Extracted 16 skills and 5 years experience from test resume. Skill extraction and experience calculation functional."
 
   - task: "Job matching algorithm"
     implemented: true
@@ -164,6 +176,9 @@ backend:
       - working: true
         agent: "main"
         comment: "Vector similarity search implemented using cosine similarity, returns top matches with similarity scores"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Job matching algorithm working. Found 7 matches with top similarity of 63.28%. Cosine similarity calculation and skill matching functional."
 
   - task: "User management API endpoints"
     implemented: true
@@ -176,6 +191,9 @@ backend:
       - working: true
         agent: "main"
         comment: "Complete CRUD operations for users, resume upload, dashboard data API"
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: All user management endpoints working. User creation, retrieval (single/all), resume upload, and dashboard data API all functional. Fixed UserProfile model validation issue."
 
   - task: "Real job scraping from job boards"
     implemented: false
