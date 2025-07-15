@@ -47,7 +47,7 @@ class UserProfile(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     email: str
-    resume_text: str
+    resume_text: str = ""
     skills: List[str] = []
     experience_years: int = 0
     job_preferences: Dict[str, Any] = {}
