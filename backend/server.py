@@ -251,8 +251,17 @@ async def get_job_matches(user_id: str, limit: int = 10):
             job_metadata = job_results['metadatas'][idx]
             
             # Calculate matching skills
-            user_skills = set(user_metadata.get('skills', []))
-            job_skills = set(job_metadata.get('requirements', []))
+            user_skills_raw = user_metadata.get('skills', '[]')
+            job_skills_raw = job_metadata.get('requirements', '[]')
+            
+            # Parse JSON strings back to lists
+            try:
+                user_skills = set(json.loads(user_skills_raw) if isinstance(user_skills_raw, str) else user_skills_raw)
+                job_skills = set(json.loads(job_skills_raw) if isinstance(job_skills_raw, str) else job_skills_raw)
+            except (json.JSONDecodeError, TypeError):
+                user_skills = set()
+                job_skills = set()
+            
             matching_skills = list(user_skills.intersection(job_skills))
             
             match = JobMatch(
