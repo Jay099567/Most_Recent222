@@ -290,7 +290,7 @@ async def create_job(job_data: JobListing):
             "title": job_data.title,
             "company": job_data.company,
             "location": job_data.location,
-            "requirements": job_data.requirements,
+            "requirements": json.dumps(job_data.requirements),
             "source": job_data.source
         }]
     )
