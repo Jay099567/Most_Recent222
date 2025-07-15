@@ -223,7 +223,7 @@ async def get_job_matches(user_id: str, limit: int = 10):
     """Get job matches for a user"""
     try:
         # Get user's resume embedding
-        user_results = resume_collection.get(ids=[user_id])
+        user_results = resume_collection.get(ids=[user_id], include=['embeddings', 'metadatas'])
         if not user_results['ids']:
             raise HTTPException(status_code=404, detail="User resume not found")
         
@@ -231,7 +231,7 @@ async def get_job_matches(user_id: str, limit: int = 10):
         user_metadata = user_results['metadatas'][0]
         
         # Get all job embeddings
-        job_results = job_collection.get()
+        job_results = job_collection.get(include=['embeddings', 'metadatas'])
         if not job_results['ids']:
             return []
         
