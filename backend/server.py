@@ -196,7 +196,7 @@ async def upload_resume(user_id: str, file: UploadFile = File(...)):
         resume_collection.upsert(
             ids=[user_id],
             embeddings=[embedding.tolist()],
-            metadatas=[{"user_id": user_id, "skills": skills, "experience_years": experience_years}]
+            metadatas=[{"user_id": user_id, "skills": json.dumps(skills), "experience_years": experience_years}]
         )
         
         # Update user profile
