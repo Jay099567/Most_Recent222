@@ -363,13 +363,9 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Real job scraping from job boards"
     - "Automated application bot"
-    - "Celery task queue setup"
-    - "Daily scheduler for automation"
-    - "Enhanced API endpoints for automation"
-    - "Autonomous system interface"
-  stuck_tasks: []
+  stuck_tasks:
+    - "Automated application bot"
   test_all: false
   test_priority: "high_first"
 
