@@ -464,30 +464,192 @@ function App() {
             </div>
           </div>
 
-          {/* Test Controls */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Test Features</h2>
+          {/* Autonomous System Controls */}
+          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">🤖 Autonomous System</h2>
+            
+            {/* System Stats */}
+            {systemStats && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-lg">
+                  <h3 className="text-sm font-medium opacity-90">Total Users</h3>
+                  <p className="text-2xl font-bold">{systemStats.total_users}</p>
+                </div>
+                <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-lg">
+                  <h3 className="text-sm font-medium opacity-90">Jobs Scraped</h3>
+                  <p className="text-2xl font-bold">{systemStats.total_jobs}</p>
+                  <p className="text-xs opacity-75">Last 24h: {systemStats.last_24h.jobs_scraped}</p>
+                </div>
+                <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 rounded-lg">
+                  <h3 className="text-sm font-medium opacity-90">Applications</h3>
+                  <p className="text-2xl font-bold">{systemStats.total_applications}</p>
+                  <p className="text-xs opacity-75">Last 24h: {systemStats.last_24h.applications_sent}</p>
+                </div>
+                <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-lg">
+                  <h3 className="text-sm font-medium opacity-90">Success Rate</h3>
+                  <p className="text-2xl font-bold">{systemStats.success_rate}%</p>
+                  <p className="text-xs opacity-75">Successful: {systemStats.successful_applications}</p>
+                </div>
+              </div>
+            )}
+            
+            {/* Scheduler Status */}
+            {schedulerStatus && (
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-medium text-gray-900">Scheduler Status</h3>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    schedulerStatus.status === 'running' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {schedulerStatus.status}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-500">Today's Jobs:</span>
+                    <span className="ml-2 font-medium">{schedulerStatus.today_stats.jobs_scraped}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Today's Apps:</span>
+                    <span className="ml-2 font-medium">{schedulerStatus.today_stats.applications_sent}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Active Users:</span>
+                    <span className="ml-2 font-medium">{schedulerStatus.today_stats.active_users}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Control Buttons */}
             <div className="space-y-4">
               <button
-                onClick={testScraping}
-                className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                onClick={startScheduler}
+                className="w-full px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 font-medium"
               >
-                Test Job Scraping (Create Sample Jobs)
+                🚀 Start Autonomous System
               </button>
               
+              <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+                <strong>Autonomous Mode:</strong> The system will automatically scrape jobs, match them with user profiles, and submit applications 24/7 without human intervention.
+              </div>
+            </div>
+          </div>
+
+          {/* Real Job Scraping */}
+          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">🔍 Real Job Scraping</h2>
+            
+            {/* Scraping Controls */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Keywords (comma-separated)</label>
+                  <input
+                    type="text"
+                    value={realScrapingKeywords.join(', ')}
+                    onChange={(e) => setRealScrapingKeywords(e.target.value.split(',').map(k => k.trim()))}
+                    placeholder="software engineer, python, react"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                  <input
+                    type="text"
+                    value={realScrapingLocation}
+                    onChange={(e) => setRealScrapingLocation(e.target.value)}
+                    placeholder="Remote, San Francisco, CA"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => realJobScraping()}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+                >
+                  🌐 Scrape Real Jobs (Indeed, LinkedIn, etc.)
+                </button>
+                
+                <button
+                  onClick={testScraping}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                >
+                  🧪 Test Scraping (Sample Jobs)
+                </button>
+              </div>
+              
+              <div className="text-sm text-gray-600 bg-green-50 p-3 rounded-lg">
+                <strong>Real Scraping:</strong> Uses JobSpy to scrape live jobs from Indeed, LinkedIn, Glassdoor, Google Jobs, ZipRecruiter, Bayt, and Naukri.
+              </div>
+            </div>
+          </div>
+
+          {/* Test Controls */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">🧪 Testing & Development</h2>
+            
+            <div className="space-y-4">
               {jobs.length > 0 && (
-                <div className="mt-4">
-                  <h3 className="font-medium text-gray-900 mb-2">Sample Jobs Created:</h3>
-                  <div className="space-y-2">
-                    {jobs.slice(0, 3).map((job) => (
+                <div className="mb-4">
+                  <h3 className="font-medium text-gray-900 mb-2">Recent Jobs ({jobs.length} total):</h3>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {jobs.slice(0, 5).map((job) => (
                       <div key={job.id} className="p-3 bg-gray-50 rounded-lg">
-                        <p className="font-medium">{job.title} at {job.company}</p>
-                        <p className="text-sm text-gray-600">{job.location} • {job.source}</p>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium">{job.title} at {job.company}</p>
+                            <p className="text-sm text-gray-600">{job.location} • {job.source}</p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              // Test application with first user
+                              if (users.length > 0) {
+                                testApplication(users[0].id, job.id);
+                              } else {
+                                alert('Create a user first to test applications');
+                              }
+                            }}
+                            className="ml-4 px-2 py-1 bg-purple-600 text-white rounded text-xs hover:bg-purple-700"
+                          >
+                            Test Apply
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
+                  
+                  {jobs.length > 5 && (
+                    <p className="text-sm text-gray-500 mt-2">
+                      + {jobs.length - 5} more jobs available
+                    </p>
+                  )}
                 </div>
               )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-yellow-50 p-4 rounded-lg">
+                  <h4 className="font-medium text-yellow-800 mb-2">⚠️ Development Notes</h4>
+                  <ul className="text-sm text-yellow-700 space-y-1">
+                    <li>• Real scraping uses proxy rotation</li>
+                    <li>• Application bot simulates human behavior</li>
+                    <li>• Scheduler runs jobs every 24 hours</li>
+                    <li>• System supports 50+ concurrent users</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="font-medium text-blue-800 mb-2">🎯 Next Steps</h4>
+                  <ul className="text-sm text-blue-700 space-y-1">
+                    <li>• Create user profiles</li>
+                    <li>• Upload resumes for skill matching</li>
+                    <li>• Configure job preferences</li>
+                    <li>• Start autonomous system</li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         </div>
