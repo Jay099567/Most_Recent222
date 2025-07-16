@@ -397,6 +397,244 @@ async def test_scraping():
         "jobs": created_jobs
     }
 
+@api_router.post("/scrape/real")
+async def real_scraping(user_id: str, keywords: List[str] = ["software engineer"], location: str = "Remote"):
+    """Real job scraping using JobSpy"""
+    try:
+        from job_scraper import JobScraper
+        
+        scraper = JobScraper(use_proxies=True, max_results_per_site=50)
+        
+        # Scrape jobs
+        jobs = await scraper.scrape_jobs_by_keywords(keywords, location, max_jobs=50)
+        
+        # Store jobs in database
+        created_jobs = []
+        for job_data in jobs:
+            job_obj = JobListing(
+                title=job_data.get('title', ''),
+                company=job_data.get('company', ''),
+                location=job_data.get('location', ''),
+                description=job_data.get('description', ''),
+                requirements=job_data.get('requirements', []),
+                salary_range=job_data.get('salary_range', ''),
+                job_type=job_data.get('job_type', 'fulltime'),
+                source=job_data.get('source', ''),
+                url=job_data.get('job_url', '')
+            )
+            
+            await create_job(job_obj)
+            created_jobs.append(job_obj)
+        
+        return {
+            "message": "Real scraping completed",
+            "jobs_created": len(created_jobs),
+            "keywords": keywords,
+            "location": location,
+            "jobs": created_jobs
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error scraping jobs: {str(e)}")
+
+@api_router.post("/apply/test")
+async def test_application(user_id: str, job_id: str):
+    """Test job application functionality"""
+    try:
+        from apply_bot import JobApplicationBot
+        
+        # Get user and job data
+        user = await db.users.find_one({"id": user_id})
+        job = await db.jobs.find_one({"id": job_id})
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        
+        # Prepare user profile
+        user_profile = {
+            'name': user.get('name', ''),
+            'email': user.get('email', ''),
+            'phone': user.get('phone', ''),
+            'first_name': user.get('name', '').split()[0] if user.get('name') else '',
+            'last_name': user.get('name', '').split()[-1] if user.get('name') else '',
+            'linkedin_url': user.get('linkedin_url', ''),
+            'portfolio_url': user.get('portfolio_url', ''),
+            'cover_letter': user.get('cover_letter', ''),
+            'salary_expectation': user.get('salary_expectation', ''),
+            'availability': user.get('availability', 'Immediately')
+        }
+        
+        # Convert job to required format
+        job_data = {
+            'id': job['id'],
+            'job_url': job['url'],
+            'title': job['title'],
+            'company': job['company'],
+            'source': job['source']
+        }
+        
+        # Test application
+        async with JobApplicationBot(headless=True) as bot:
+            result = await bot.apply_to_job(job_data, user_profile)
+        
+        # Store application result
+        application_record = ApplicationRecord(
+            user_id=user_id,
+            job_id=job_id,
+            status=result.status,
+            error_message=result.error_message,
+            retry_count=result.retry_count
+        )
+        
+        await db.applications.insert_one(application_record.dict())
+        
+        return {
+            "message": "Test application completed",
+            "application_result": {
+                "success": result.success,
+                "status": result.status,
+                "error_message": result.error_message,
+                "retry_count": result.retry_count
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error testing application: {str(e)}")
+
+@api_router.post("/scheduler/start")
+async def start_scheduler():
+    """Start the autonomous scheduler"""
+    try:
+        from scheduler import AutoApplyScheduler
+        
+        # This would start the scheduler in a background task
+        # For now, return a success message
+        return {
+            "message": "Scheduler start requested",
+            "status": "success",
+            "note": "In production, this would start the background scheduler"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error starting scheduler: {str(e)}")
+
+@api_router.get("/scheduler/status")
+async def get_scheduler_status():
+    """Get scheduler status and statistics"""
+    try:
+        # Get recent workflow logs
+        recent_logs = await db.workflow_logs.find().sort("created_at", -1).limit(10).to_list(10)
+        
+        # Get system stats
+        today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_applications = await db.applications.count_documents({
+            "applied_at": {"$gte": today}
+        })
+        
+        today_jobs = await db.jobs.count_documents({
+            "scraped_at": {"$gte": today}
+        })
+        
+        total_users = await db.users.count_documents({})
+        
+        return {
+            "status": "running",
+            "today_stats": {
+                "jobs_scraped": today_jobs,
+                "applications_sent": today_applications,
+                "active_users": total_users
+            },
+            "recent_logs": recent_logs
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting scheduler status: {str(e)}")
+
+@api_router.get("/applications/{user_id}")
+async def get_user_applications(user_id: str, limit: int = 50):
+    """Get application history for a user"""
+    try:
+        applications = await db.applications.find({"user_id": user_id}).sort("applied_at", -1).limit(limit).to_list(limit)
+        
+        # Get job details for each application
+        for app in applications:
+            job = await db.jobs.find_one({"id": app["job_id"]})
+            if job:
+                app["job_details"] = {
+                    "title": job.get("title", ""),
+                    "company": job.get("company", ""),
+                    "location": job.get("location", ""),
+                    "source": job.get("source", "")
+                }
+        
+        return applications
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting applications: {str(e)}")
+
+@api_router.get("/jobs/{user_id}")
+async def get_user_jobs(user_id: str, limit: int = 100):
+    """Get scraped jobs for a user"""
+    try:
+        jobs = await db.jobs.find({"user_id": user_id}).sort("scraped_at", -1).limit(limit).to_list(limit)
+        return jobs
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting jobs: {str(e)}")
+
+@api_router.put("/users/{user_id}/preferences")
+async def update_user_preferences(user_id: str, preferences: Dict[str, Any]):
+    """Update user job preferences"""
+    try:
+        # Update user preferences
+        await db.users.update_one(
+            {"id": user_id},
+            {"$set": {
+                "job_preferences": preferences,
+                "updated_at": datetime.utcnow()
+            }}
+        )
+        
+        return {"message": "Preferences updated successfully"}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating preferences: {str(e)}")
+
+@api_router.get("/stats/system")
+async def get_system_stats():
+    """Get overall system statistics"""
+    try:
+        # Get counts
+        total_users = await db.users.count_documents({})
+        total_jobs = await db.jobs.count_documents({})
+        total_applications = await db.applications.count_documents({})
+        successful_applications = await db.applications.count_documents({"status": "applied"})
+        
+        # Get recent activity
+        last_24h = datetime.utcnow() - timedelta(hours=24)
+        recent_jobs = await db.jobs.count_documents({"scraped_at": {"$gte": last_24h}})
+        recent_applications = await db.applications.count_documents({"applied_at": {"$gte": last_24h}})
+        
+        # Calculate success rate
+        success_rate = (successful_applications / total_applications * 100) if total_applications > 0 else 0
+        
+        return {
+            "total_users": total_users,
+            "total_jobs": total_jobs,
+            "total_applications": total_applications,
+            "successful_applications": successful_applications,
+            "success_rate": round(success_rate, 2),
+            "last_24h": {
+                "jobs_scraped": recent_jobs,
+                "applications_sent": recent_applications
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting system stats: {str(e)}")
+
 # Include router
 app.include_router(api_router)
 
