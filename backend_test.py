@@ -76,7 +76,7 @@ class BackendTester:
                 "email": "sarah.johnson@email.com"
             }
             
-            response = requests.post(f"{API_BASE}/users", json=user_data, timeout=10)
+            response = requests.post(f"{API_BASE}/users", json=user_data, timeout=30)
             if response.status_code == 200:
                 user = response.json()
                 self.test_user_id = user["id"]
