@@ -226,11 +226,75 @@ function App() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [jobs, setJobs] = useState([]);
+  const [systemStats, setSystemStats] = useState(null);
+  const [schedulerStatus, setSchedulerStatus] = useState(null);
+  const [realScrapingKeywords, setRealScrapingKeywords] = useState(['software engineer']);
+  const [realScrapingLocation, setRealScrapingLocation] = useState('Remote');
 
   useEffect(() => {
     fetchUsers();
+    fetchSystemStats();
+    fetchSchedulerStatus();
   }, []);
+
+  const fetchSystemStats = async () => {
+    try {
+      const response = await axios.get(`${API}/stats/system`);
+      setSystemStats(response.data);
+    } catch (error) {
+      console.error('Error fetching system stats:', error);
+    }
+  };
+
+  const fetchSchedulerStatus = async () => {
+    try {
+      const response = await axios.get(`${API}/scheduler/status`);
+      setSchedulerStatus(response.data);
+    } catch (error) {
+      console.error('Error fetching scheduler status:', error);
+    }
+  };
+
+  const realJobScraping = async (userId = null) => {
+    try {
+      const keywords = realScrapingKeywords.join(',');
+      const params = userId ? 
+        `?user_id=${userId}&keywords=${keywords}&location=${realScrapingLocation}` :
+        `?keywords=${keywords}&location=${realScrapingLocation}`;
+      
+      const response = await axios.post(`${API}/scrape/real${params}`);
+      alert(`Real job scraping completed! Found ${response.data.jobs_created} jobs for "${keywords}" in ${realScrapingLocation}`);
+      
+      // Refresh jobs and stats
+      const jobsResponse = await axios.get(`${API}/jobs`);
+      setJobs(jobsResponse.data);
+      await fetchSystemStats();
+    } catch (error) {
+      alert('Error with real job scraping: ' + (error.response?.data?.detail || error.message));
+    }
+  };
+
+  const testApplication = async (userId, jobId) => {
+    try {
+      const response = await axios.post(`${API}/apply/test?user_id=${userId}&job_id=${jobId}`);
+      alert(`Application test completed! Status: ${response.data.application_result.status}`);
+      
+      // Refresh data
+      await fetchSystemStats();
+    } catch (error) {
+      alert('Error testing application: ' + (error.response?.data?.detail || error.message));
+    }
+  };
+
+  const startScheduler = async () => {
+    try {
+      const response = await axios.post(`${API}/scheduler/start`);
+      alert('Scheduler started successfully! The system will now run autonomously.');
+      await fetchSchedulerStatus();
+    } catch (error) {
+      alert('Error starting scheduler: ' + (error.response?.data?.detail || error.message));
+    }
+  };
 
   const fetchUsers = async () => {
     try {
