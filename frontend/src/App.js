@@ -5,8 +5,106 @@ import axios from 'axios';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Dashboard Component
-const Dashboard = ({ user, stats, matches, applications, onBack }) => {
+// AI-Enhanced Dashboard Component
+const AIEnhancedDashboard = ({ user, stats, matches, applications, onBack }) => {
+  const [aiJobs, setAiJobs] = useState([]);
+  const [aiRecommendations, setAiRecommendations] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [aiFeatures, setAiFeatures] = useState({
+    scraping: false,
+    applying: false,
+    optimizing: false
+  });
+  const [batchApplySettings, setBatchApplySettings] = useState({
+    maxApplications: 10,
+    keywords: 'software engineer',
+    location: 'United States'
+  });
+
+  // Load AI recommendations on component mount
+  useEffect(() => {
+    if (user) {
+      loadAIRecommendations();
+    }
+  }, [user]);
+
+  const loadAIRecommendations = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API}/ai/job-recommendations/${user.id}`);
+      setAiRecommendations(response.data.recommendations || []);
+    } catch (error) {
+      console.error('Error loading AI recommendations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAIScraping = async () => {
+    try {
+      setAiFeatures(prev => ({ ...prev, scraping: true }));
+      
+      const response = await axios.post(`${API}/ai/scrape`, {
+        keywords: batchApplySettings.keywords,
+        location: batchApplySettings.location,
+        job_boards: ['indeed', 'linkedin', 'glassdoor', 'google', 'zip_recruiter'],
+        user_id: user.id
+      });
+      
+      setAiJobs(response.data.jobs || []);
+      alert(`AI found ${response.data.jobs_found} jobs! Check the AI Jobs section.`);
+    } catch (error) {
+      console.error('Error with AI scraping:', error);
+      alert('AI scraping failed. Please try again.');
+    } finally {
+      setAiFeatures(prev => ({ ...prev, scraping: false }));
+    }
+  };
+
+  const handleBatchApply = async () => {
+    try {
+      setAiFeatures(prev => ({ ...prev, applying: true }));
+      
+      const response = await axios.post(`${API}/ai/batch-apply`, {
+        user_id: user.id,
+        max_applications: batchApplySettings.maxApplications,
+        keywords: batchApplySettings.keywords,
+        location: batchApplySettings.location
+      });
+      
+      alert(`AI applied to ${response.data.applications_submitted} jobs automatically!`);
+      
+      // Refresh recommendations
+      loadAIRecommendations();
+    } catch (error) {
+      console.error('Error with batch application:', error);
+      alert('Batch application failed. Please try again.');
+    } finally {
+      setAiFeatures(prev => ({ ...prev, applying: false }));
+    }
+  };
+
+  const handleResumeOptimization = async (jobDescription) => {
+    try {
+      setAiFeatures(prev => ({ ...prev, optimizing: true }));
+      
+      const response = await axios.post(`${API}/ai/optimize-resume`, {
+        user_id: user.id,
+        job_description: jobDescription,
+        company_name: 'Target Company'
+      });
+      
+      // Show optimized resume in a modal or new section
+      alert('Resume optimized! Check the console for details.');
+      console.log('Optimized Resume:', response.data.optimized_resume);
+      console.log('Generated Cover Letter:', response.data.cover_letter);
+    } catch (error) {
+      console.error('Error with resume optimization:', error);
+      alert('Resume optimization failed. Please try again.');
+    } finally {
+      setAiFeatures(prev => ({ ...prev, optimizing: false }));
+    }
+  };
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
