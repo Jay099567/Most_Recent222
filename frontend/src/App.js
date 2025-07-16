@@ -226,6 +226,7 @@ function App() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [jobs, setJobs] = useState([]);
   const [systemStats, setSystemStats] = useState(null);
   const [schedulerStatus, setSchedulerStatus] = useState(null);
   const [realScrapingKeywords, setRealScrapingKeywords] = useState(['software engineer']);
