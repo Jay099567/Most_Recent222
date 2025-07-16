@@ -619,15 +619,22 @@ class BackendTester:
         print(f"Backend URL: {BACKEND_URL}")
         print(f"API Base: {API_BASE}")
         
-        # Run tests in logical order
+        # Run core tests first
         self.test_basic_connectivity()
         self.test_user_management()
         self.test_resume_upload()
         self.test_job_management()
         self.test_job_matching()
         self.test_dashboard_data()
-        self.test_scraping_endpoint()
         self.test_database_connections()
+        
+        # Run autonomous system tests
+        self.test_scraping_endpoint()
+        self.test_real_job_scraping()
+        self.test_application_bot()
+        self.test_scheduler_endpoints()
+        self.test_enhanced_api_endpoints()
+        self.test_autonomous_workflow_integration()
         
         # Summary
         print("\n" + "="*60)
