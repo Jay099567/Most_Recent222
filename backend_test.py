@@ -324,6 +324,251 @@ class BackendTester:
         except Exception as e:
             self.log_test("Sample job scraping", False, f"Request failed: {str(e)}")
     
+    def test_real_job_scraping(self):
+        """Test real job scraping with JobSpy integration"""
+        print("\n=== Testing Real Job Scraping ===")
+        
+        if not self.test_user_id:
+            self.log_test("Real job scraping", False, "No test user available")
+            return
+        
+        try:
+            # Test real job scraping
+            scraping_data = {
+                "user_id": self.test_user_id,
+                "keywords": ["python developer"],
+                "location": "Remote"
+            }
+            
+            response = requests.post(f"{API_BASE}/scrape/real", 
+                                   params=scraping_data, timeout=60)
+            
+            if response.status_code == 200:
+                result = response.json()
+                jobs_created = result.get("jobs_created", 0)
+                keywords = result.get("keywords", [])
+                location = result.get("location", "")
+                
+                if jobs_created > 0:
+                    self.log_test("Real job scraping", True, 
+                                f"Scraped {jobs_created} real jobs for '{' '.join(keywords)}' in {location}")
+                else:
+                    self.log_test("Real job scraping", True, 
+                                "Real scraping endpoint working (no jobs found - may be expected)")
+            else:
+                self.log_test("Real job scraping", False, f"HTTP {response.status_code}: {response.text}")
+        except Exception as e:
+            self.log_test("Real job scraping", False, f"Request failed: {str(e)}")
+    
+    def test_application_bot(self):
+        """Test automated application bot"""
+        print("\n=== Testing Automated Application Bot ===")
+        
+        if not self.test_user_id:
+            self.log_test("Application bot", False, "No test user available")
+            return
+        
+        if len(self.test_job_ids) == 0:
+            self.log_test("Application bot", False, "No test jobs available")
+            return
+        
+        try:
+            # Test application bot with first job
+            test_job_id = self.test_job_ids[0]
+            
+            response = requests.post(f"{API_BASE}/apply/test", 
+                                   params={"user_id": self.test_user_id, "job_id": test_job_id}, 
+                                   timeout=120)
+            
+            if response.status_code == 200:
+                result = response.json()
+                application_result = result.get("application_result", {})
+                success = application_result.get("success", False)
+                status = application_result.get("status", "")
+                error_message = application_result.get("error_message", "")
+                
+                if success:
+                    self.log_test("Application bot", True, f"Successfully applied to job (status: {status})")
+                elif status in ["already_applied", "requires_manual"]:
+                    self.log_test("Application bot", True, f"Bot working correctly (status: {status})")
+                else:
+                    self.log_test("Application bot", False, f"Application failed: {error_message}")
+            else:
+                self.log_test("Application bot", False, f"HTTP {response.status_code}: {response.text}")
+        except Exception as e:
+            self.log_test("Application bot", False, f"Request failed: {str(e)}")
+    
+    def test_scheduler_endpoints(self):
+        """Test scheduler control endpoints"""
+        print("\n=== Testing Scheduler Endpoints ===")
+        
+        # Test scheduler start
+        try:
+            response = requests.post(f"{API_BASE}/scheduler/start", timeout=10)
+            if response.status_code == 200:
+                result = response.json()
+                if result.get("status") == "success":
+                    self.log_test("Scheduler start", True, "Scheduler start endpoint working")
+                else:
+                    self.log_test("Scheduler start", False, f"Unexpected response: {result}")
+            else:
+                self.log_test("Scheduler start", False, f"HTTP {response.status_code}: {response.text}")
+        except Exception as e:
+            self.log_test("Scheduler start", False, f"Request failed: {str(e)}")
+        
+        # Test scheduler status
+        try:
+            response = requests.get(f"{API_BASE}/scheduler/status", timeout=10)
+            if response.status_code == 200:
+                result = response.json()
+                required_fields = ["status", "today_stats", "recent_logs"]
+                
+                if all(field in result for field in required_fields):
+                    today_stats = result["today_stats"]
+                    self.log_test("Scheduler status", True, 
+                                f"Status: {result['status']}, Today: {today_stats['applications_sent']} apps, {today_stats['jobs_scraped']} jobs")
+                else:
+                    missing = [f for f in required_fields if f not in result]
+                    self.log_test("Scheduler status", False, f"Missing fields: {missing}")
+            else:
+                self.log_test("Scheduler status", False, f"HTTP {response.status_code}: {response.text}")
+        except Exception as e:
+            self.log_test("Scheduler status", False, f"Request failed: {str(e)}")
+    
+    def test_enhanced_api_endpoints(self):
+        """Test enhanced API endpoints for autonomous system"""
+        print("\n=== Testing Enhanced API Endpoints ===")
+        
+        if not self.test_user_id:
+            self.log_test("Enhanced API endpoints", False, "No test user available")
+            return
+        
+        # Test application history endpoint
+        try:
+            response = requests.get(f"{API_BASE}/applications/{self.test_user_id}", timeout=10)
+            if response.status_code == 200:
+                applications = response.json()
+                if isinstance(applications, list):
+                    self.log_test("Application history", True, f"Retrieved {len(applications)} application records")
+                else:
+                    self.log_test("Application history", False, "Invalid response format")
+            else:
+                self.log_test("Application history", False, f"HTTP {response.status_code}: {response.text}")
+        except Exception as e:
+            self.log_test("Application history", False, f"Request failed: {str(e)}")
+        
+        # Test user jobs endpoint
+        try:
+            response = requests.get(f"{API_BASE}/jobs/{self.test_user_id}", timeout=10)
+            if response.status_code == 200:
+                jobs = response.json()
+                if isinstance(jobs, list):
+                    self.log_test("User jobs", True, f"Retrieved {len(jobs)} user-specific jobs")
+                else:
+                    self.log_test("User jobs", False, "Invalid response format")
+            else:
+                self.log_test("User jobs", False, f"HTTP {response.status_code}: {response.text}")
+        except Exception as e:
+            self.log_test("User jobs", False, f"Request failed: {str(e)}")
+        
+        # Test user preferences endpoint
+        try:
+            preferences = {
+                "keywords": ["python", "javascript"],
+                "location": "Remote",
+                "job_type": "fulltime",
+                "max_daily_applications": 25
+            }
+            
+            response = requests.put(f"{API_BASE}/users/{self.test_user_id}/preferences", 
+                                  json=preferences, timeout=10)
+            if response.status_code == 200:
+                result = response.json()
+                if "message" in result:
+                    self.log_test("User preferences", True, "Preferences updated successfully")
+                else:
+                    self.log_test("User preferences", False, "Unexpected response format")
+            else:
+                self.log_test("User preferences", False, f"HTTP {response.status_code}: {response.text}")
+        except Exception as e:
+            self.log_test("User preferences", False, f"Request failed: {str(e)}")
+        
+        # Test system statistics endpoint
+        try:
+            response = requests.get(f"{API_BASE}/stats/system", timeout=10)
+            if response.status_code == 200:
+                stats = response.json()
+                required_fields = ["total_users", "total_jobs", "total_applications", "success_rate", "last_24h"]
+                
+                if all(field in stats for field in required_fields):
+                    self.log_test("System statistics", True, 
+                                f"Users: {stats['total_users']}, Jobs: {stats['total_jobs']}, Apps: {stats['total_applications']}, Success: {stats['success_rate']}%")
+                else:
+                    missing = [f for f in required_fields if f not in stats]
+                    self.log_test("System statistics", False, f"Missing fields: {missing}")
+            else:
+                self.log_test("System statistics", False, f"HTTP {response.status_code}: {response.text}")
+        except Exception as e:
+            self.log_test("System statistics", False, f"Request failed: {str(e)}")
+    
+    def test_autonomous_workflow_integration(self):
+        """Test complete autonomous workflow integration"""
+        print("\n=== Testing Autonomous Workflow Integration ===")
+        
+        if not self.test_user_id:
+            self.log_test("Autonomous workflow", False, "No test user available")
+            return
+        
+        try:
+            # Step 1: Check if user has resume uploaded
+            user_response = requests.get(f"{API_BASE}/users/{self.test_user_id}", timeout=10)
+            if user_response.status_code != 200:
+                self.log_test("Autonomous workflow", False, "Cannot retrieve user data")
+                return
+            
+            user = user_response.json()
+            has_resume = len(user.get("skills", [])) > 0
+            
+            if not has_resume:
+                self.log_test("Autonomous workflow", False, "User needs resume for autonomous workflow")
+                return
+            
+            # Step 2: Test job scraping creates jobs
+            scraping_response = requests.post(f"{API_BASE}/scrape/test", timeout=20)
+            if scraping_response.status_code != 200:
+                self.log_test("Autonomous workflow", False, "Job scraping failed")
+                return
+            
+            # Step 3: Test job matching works
+            matches_response = requests.get(f"{API_BASE}/users/{self.test_user_id}/matches", timeout=15)
+            if matches_response.status_code != 200:
+                self.log_test("Autonomous workflow", False, "Job matching failed")
+                return
+            
+            matches = matches_response.json()
+            if len(matches) == 0:
+                self.log_test("Autonomous workflow", False, "No job matches found")
+                return
+            
+            # Step 4: Test dashboard shows complete data
+            dashboard_response = requests.get(f"{API_BASE}/dashboard/{self.test_user_id}", timeout=15)
+            if dashboard_response.status_code != 200:
+                self.log_test("Autonomous workflow", False, "Dashboard data retrieval failed")
+                return
+            
+            dashboard = dashboard_response.json()
+            required_sections = ["user", "matches", "applications", "scraping_tasks", "stats"]
+            
+            if all(section in dashboard for section in required_sections):
+                stats = dashboard["stats"]
+                self.log_test("Autonomous workflow", True, 
+                            f"Complete workflow functional: {len(matches)} matches, {stats['skills_count']} skills, {stats['experience_years']} years exp")
+            else:
+                self.log_test("Autonomous workflow", False, "Dashboard missing required sections")
+                
+        except Exception as e:
+            self.log_test("Autonomous workflow", False, f"Workflow test failed: {str(e)}")
+    
     def test_database_connections(self):
         """Test database connectivity indirectly through API operations"""
         print("\n=== Testing Database Connections ===")
