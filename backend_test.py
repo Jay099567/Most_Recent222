@@ -827,6 +827,15 @@ class BackendTester:
         self.test_application_bot()
         self.test_scheduler_endpoints()
         self.test_enhanced_api_endpoints()
+        
+        # Run NEW AI-powered tests
+        self.test_ai_job_scraping()
+        self.test_ai_job_recommendations()
+        self.test_ai_resume_optimization()
+        self.test_ai_application_bot()
+        self.test_ai_batch_apply()
+        
+        # Final integration test
         self.test_autonomous_workflow_integration()
         
         # Summary
