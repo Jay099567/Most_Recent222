@@ -22,6 +22,17 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import hashlib
 
+# Import AI modules
+try:
+    from ai_application_bot import AIJobApplicationBot
+    from advanced_job_scraper import AdvancedJobScraper
+    import requests
+except ImportError as e:
+    logger = logging.getLogger(__name__)
+    logger.warning(f"AI modules not available: {e}")
+    AIJobApplicationBot = None
+    AdvancedJobScraper = None
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
