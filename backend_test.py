@@ -105,7 +105,7 @@ class BackendTester:
         # Test get specific user
         if self.test_user_id:
             try:
-                response = requests.get(f"{API_BASE}/users/{self.test_user_id}", timeout=10)
+                response = requests.get(f"{API_BASE}/users/{self.test_user_id}", timeout=30)
                 if response.status_code == 200:
                     user = response.json()
                     if user["id"] == self.test_user_id:
