@@ -665,11 +665,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Import new AI modules
-from ai_application_bot import AIJobApplicationBot
-from advanced_job_scraper import AdvancedJobScraper
-import requests
-
 # AI-powered endpoints
 @api_router.post("/ai/apply")
 async def ai_apply_to_jobs(request: dict):
@@ -677,6 +672,9 @@ async def ai_apply_to_jobs(request: dict):
     Apply to jobs using AI-powered application bot
     """
     try:
+        if not AIJobApplicationBot:
+            raise HTTPException(status_code=500, detail="AI application bot not available")
+            
         user_id = request.get('user_id')
         job_urls = request.get('job_urls', [])
         
@@ -743,6 +741,9 @@ async def ai_scrape_jobs(request: dict):
     Scrape jobs using AI-powered scraper with filtering
     """
     try:
+        if not AdvancedJobScraper:
+            raise HTTPException(status_code=500, detail="AI scraper not available")
+            
         keywords = request.get('keywords', '')
         location = request.get('location', 'United States')
         job_boards = request.get('job_boards', ['indeed', 'linkedin', 'glassdoor'])
@@ -830,6 +831,9 @@ async def ai_optimize_resume(request: dict):
     Optimize resume using AI for specific job
     """
     try:
+        if not AIJobApplicationBot:
+            raise HTTPException(status_code=500, detail="AI application bot not available")
+            
         user_id = request.get('user_id')
         job_description = request.get('job_description', '')
         
@@ -929,6 +933,9 @@ async def ai_batch_apply(request: dict):
     Apply to multiple jobs automatically using AI
     """
     try:
+        if not AIJobApplicationBot or not AdvancedJobScraper:
+            raise HTTPException(status_code=500, detail="AI modules not available")
+            
         user_id = request.get('user_id')
         max_applications = request.get('max_applications', 10)
         keywords = request.get('keywords', 'software engineer')
