@@ -32,3 +32,4 @@ playwright>=1.40.0
 redis>=5.0.0
 celery>=5.3.0
 python-jobspy>=1.1.80
+apscheduler>=3.10.0
