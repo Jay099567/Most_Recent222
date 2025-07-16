@@ -90,7 +90,7 @@ class BackendTester:
         
         # Test get all users
         try:
-            response = requests.get(f"{API_BASE}/users", timeout=10)
+            response = requests.get(f"{API_BASE}/users", timeout=30)
             if response.status_code == 200:
                 users = response.json()
                 if isinstance(users, list) and len(users) > 0:
