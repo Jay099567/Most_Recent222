@@ -511,6 +511,199 @@ class BackendTester:
         except Exception as e:
             self.log_test("System statistics", False, f"Request failed: {str(e)}")
     
+    def test_ai_job_scraping(self):
+        """Test AI-powered job scraping endpoint"""
+        print("\n=== Testing AI Job Scraping ===")
+        
+        try:
+            scraping_request = {
+                "keywords": "python developer",
+                "location": "United States",
+                "job_boards": ["indeed", "linkedin", "glassdoor"],
+                "user_id": self.test_user_id if self.test_user_id else None
+            }
+            
+            response = requests.post(f"{API_BASE}/ai/scrape", json=scraping_request, timeout=60)
+            
+            if response.status_code == 200:
+                result = response.json()
+                jobs_found = result.get("jobs_found", 0)
+                job_boards = result.get("job_boards", [])
+                ai_filtered = result.get("ai_filtered", False)
+                
+                if jobs_found > 0:
+                    self.log_test("AI job scraping", True, 
+                                f"Found {jobs_found} jobs from {len(job_boards)} boards, AI filtered: {ai_filtered}")
+                else:
+                    # Check if it's a module availability issue
+                    if "AI scraper not available" in response.text:
+                        self.log_test("AI job scraping", False, "AI scraper module not available")
+                    else:
+                        self.log_test("AI job scraping", True, "AI scraping endpoint working (no jobs found - may be expected)")
+            else:
+                error_text = response.text
+                if "AI scraper not available" in error_text:
+                    self.log_test("AI job scraping", False, "AI scraper module not available")
+                else:
+                    self.log_test("AI job scraping", False, f"HTTP {response.status_code}: {error_text}")
+        except Exception as e:
+            self.log_test("AI job scraping", False, f"Request failed: {str(e)}")
+    
+    def test_ai_job_recommendations(self):
+        """Test AI job recommendations endpoint"""
+        print("\n=== Testing AI Job Recommendations ===")
+        
+        if not self.test_user_id:
+            self.log_test("AI job recommendations", False, "No test user available")
+            return
+        
+        try:
+            response = requests.get(f"{API_BASE}/ai/job-recommendations/{self.test_user_id}", timeout=30)
+            
+            if response.status_code == 200:
+                result = response.json()
+                recommendations_count = result.get("recommendations_count", 0)
+                user_skills = result.get("user_skills", [])
+                recommendations = result.get("recommendations", [])
+                
+                if recommendations_count > 0:
+                    # Check if recommendations have AI scores
+                    first_rec = recommendations[0] if recommendations else {}
+                    ai_score = first_rec.get("ai_score", 0)
+                    
+                    self.log_test("AI job recommendations", True, 
+                                f"Generated {recommendations_count} recommendations for {len(user_skills)} skills, top AI score: {ai_score:.3f}")
+                else:
+                    self.log_test("AI job recommendations", True, 
+                                "AI recommendations endpoint working (no recommendations - may need more jobs in DB)")
+            else:
+                self.log_test("AI job recommendations", False, f"HTTP {response.status_code}: {response.text}")
+        except Exception as e:
+            self.log_test("AI job recommendations", False, f"Request failed: {str(e)}")
+    
+    def test_ai_resume_optimization(self):
+        """Test AI resume optimization endpoint"""
+        print("\n=== Testing AI Resume Optimization ===")
+        
+        if not self.test_user_id:
+            self.log_test("AI resume optimization", False, "No test user available")
+            return
+        
+        try:
+            # Check if user has resume
+            user_response = requests.get(f"{API_BASE}/users/{self.test_user_id}", timeout=10)
+            if user_response.status_code != 200:
+                self.log_test("AI resume optimization", False, "Cannot retrieve user data")
+                return
+            
+            user = user_response.json()
+            if not user.get("resume_text"):
+                self.log_test("AI resume optimization", False, "User has no resume to optimize")
+                return
+            
+            optimization_request = {
+                "user_id": self.test_user_id,
+                "job_description": "We are looking for a senior Python developer with experience in FastAPI, Django, and cloud technologies. Must have 5+ years of experience in software development.",
+                "company_name": "TechCorp Inc"
+            }
+            
+            response = requests.post(f"{API_BASE}/ai/optimize-resume", json=optimization_request, timeout=60)
+            
+            if response.status_code == 200:
+                result = response.json()
+                optimized_resume = result.get("optimized_resume", "")
+                cover_letter = result.get("cover_letter", "")
+                improvement_score = result.get("improvement_score", 0)
+                
+                if optimized_resume and cover_letter:
+                    self.log_test("AI resume optimization", True, 
+                                f"Resume optimized (improvement score: {improvement_score:.2f}), cover letter generated")
+                else:
+                    self.log_test("AI resume optimization", False, "Incomplete optimization result")
+            else:
+                error_text = response.text
+                if "AI application bot not available" in error_text:
+                    self.log_test("AI resume optimization", False, "AI application bot module not available")
+                else:
+                    self.log_test("AI resume optimization", False, f"HTTP {response.status_code}: {error_text}")
+        except Exception as e:
+            self.log_test("AI resume optimization", False, f"Request failed: {str(e)}")
+    
+    def test_ai_application_bot(self):
+        """Test AI application bot endpoint"""
+        print("\n=== Testing AI Application Bot ===")
+        
+        if not self.test_user_id:
+            self.log_test("AI application bot", False, "No test user available")
+            return
+        
+        try:
+            # Use sample job URLs for testing
+            application_request = {
+                "user_id": self.test_user_id,
+                "job_urls": [
+                    "https://indeed.com/job/sample-python-dev",
+                    "https://linkedin.com/job/sample-fullstack"
+                ]
+            }
+            
+            response = requests.post(f"{API_BASE}/ai/apply", json=application_request, timeout=120)
+            
+            if response.status_code == 200:
+                result = response.json()
+                success_count = result.get("success_count", 0)
+                total_count = result.get("total_count", 0)
+                results = result.get("results", [])
+                
+                if total_count > 0:
+                    self.log_test("AI application bot", True, 
+                                f"Processed {total_count} applications, {success_count} successful")
+                else:
+                    self.log_test("AI application bot", False, "No applications processed")
+            else:
+                error_text = response.text
+                if "AI application bot not available" in error_text:
+                    self.log_test("AI application bot", False, "AI application bot module not available")
+                else:
+                    self.log_test("AI application bot", False, f"HTTP {response.status_code}: {error_text}")
+        except Exception as e:
+            self.log_test("AI application bot", False, f"Request failed: {str(e)}")
+    
+    def test_ai_batch_apply(self):
+        """Test AI batch application system"""
+        print("\n=== Testing AI Batch Apply System ===")
+        
+        if not self.test_user_id:
+            self.log_test("AI batch apply", False, "No test user available")
+            return
+        
+        try:
+            batch_request = {
+                "user_id": self.test_user_id,
+                "max_applications": 5,
+                "keywords": "python developer",
+                "location": "United States"
+            }
+            
+            response = requests.post(f"{API_BASE}/ai/batch-apply", json=batch_request, timeout=180)
+            
+            if response.status_code == 200:
+                result = response.json()
+                applications_submitted = result.get("applications_submitted", 0)
+                total_attempted = result.get("total_attempted", 0)
+                recommendations_used = result.get("recommendations_used", 0)
+                
+                self.log_test("AI batch apply", True, 
+                            f"Batch system working: {applications_submitted}/{total_attempted} successful, {recommendations_used} recommendations used")
+            else:
+                error_text = response.text
+                if "AI modules not available" in error_text:
+                    self.log_test("AI batch apply", False, "AI modules not available")
+                else:
+                    self.log_test("AI batch apply", False, f"HTTP {response.status_code}: {error_text}")
+        except Exception as e:
+            self.log_test("AI batch apply", False, f"Request failed: {str(e)}")
+    
     def test_autonomous_workflow_integration(self):
         """Test complete autonomous workflow integration"""
         print("\n=== Testing Autonomous Workflow Integration ===")
